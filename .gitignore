@@ -1,0 +1,52 @@
+# ----------------------------------------------------------------------#
+# Java defaults
+# ----------------------------------------------------------------------#
+*.class
+*.jar
+*.war
+*.ear
+
+# ----------------------------------------------------------------------#
+# Eclipse-specific
+# ----------------------------------------------------------------------#
+*.pydevproject
+.metadata
+bin/**
+tmp/**
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.project
+.classpath
+.externalToolBuilders/
+.launch
+.cproject
+.buildpath
+
+# ----------------------------------------------------------------------#
+# Studio-specific #
+# ----------------------------------------------------------------------#
+.studio/
+caches/
+flows/
+target/
+.mflow
+.mule/
+mule-project.xml
+.studio/caches/metadata_contents.xml
+
+# ----------------------------------------------------------------------#
+# OS specific
+# ----------------------------------------------------------------------#
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

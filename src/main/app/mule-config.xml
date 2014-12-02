@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.5/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/3.5/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.5/mule-vm.xsd">
+    <description>
+    This configuration uses an HTTP endpoint to receive requests.
+    </description>
+
+    <!--
+    To invoke the Hello service over HTTP, hit the following URL in your browser:
+
+        http://localhost:8888?name=Roy
+
+    To invoke the Hello service via a Servlet, submit a web form such as:
+
+        <form method="POST" action="/mule-examples/rest?endpoint=greeter">
+            <input type="text" name="payload"/>
+            <input type="submit" value="POST" />
+        </form>
+    -->
+
+    <custom-transformer name="StringToNameString" class="org.mule.demo.StringToNameString"/>
+    <custom-transformer name="NameStringToChatString" class="org.mule.demo.NameStringToChatString"/>
+    <custom-transformer name="ChatStringToString" class="org.mule.demo.ChatStringToString"/>
+    <custom-transformer name="HttpRequestToNameString" class="org.mule.demo.HttpRequestToNameString"/>
+    <custom-transformer name="ExceptionToString" class="org.mule.demo.ExceptionToString"/>
+    <custom-transformer name="HttpRequestToParameter" class="org.mule.transport.servlet.transformers.HttpRequestToParameter"/>
+    <custom-transformer name="ObjectToString" class="org.mule.transformer.simple.ObjectToString"/>
+
+    <flow name="Hello World">
+        <composite-source>
+            <!-- Incoming HTTP requests -->
+            <inbound-endpoint address="http://localhost:8888" transformer-refs="HttpRequestToNameString" exchange-pattern="request-response">
+                <not-filter>
+                    <wildcard-filter pattern="/favicon.ico"/>
+                </not-filter>
+            </inbound-endpoint>
+
+            <!-- Incoming Servlet requests -->
+            <inbound-endpoint address="servlet://name" transformer-refs="HttpRequestToNameString" exchange-pattern="request-response">
+                <not-filter>
+                    <wildcard-filter pattern="/favicon.ico"/>
+                </not-filter>
+            </inbound-endpoint>
+
+            <!-- Incoming VM requests -->
+            <vm:inbound-endpoint path="greeter" transformer-refs="StringToNameString" exchange-pattern="request-response"/>
+        </composite-source>
+
+        <component class="org.mule.demo.Greeter"/>
+
+        <choice>
+            <when expression="payload instanceof org.mule.demo.NameString" evaluator="groovy">
+                <vm:outbound-endpoint path="chitchatter" exchange-pattern="request-response"/>
+            </when>
+            <when expression="payload instanceof java.lang.Exception" evaluator="groovy">
+                <vm:outbound-endpoint path="userErrorHandler" exchange-pattern="request-response"/>
+            </when>
+        </choice>
+
+        <!-- Route unexpected errors to separate error handler -->
+        <default-exception-strategy>
+            <vm:outbound-endpoint path="systemErrorHandler" exchange-pattern="one-way"/>
+        </default-exception-strategy>
+    </flow>
+
+    <model>
+        <service name="UserErrorHandler">
+            <inbound>
+                <vm:inbound-endpoint path="userErrorHandler" responseTransformer-refs="ExceptionToString" exchange-pattern="request-response"/>
+            </inbound>
+        </service>
+    </model>
+
+    <flow name="ChitChat">
+        <vm:inbound-endpoint path="chitchatter" transformer-refs="NameStringToChatString"
+            responseTransformer-refs="ChatStringToString" exchange-pattern="request-response"/>
+        <component class="org.mule.demo.ChitChatter"/>
+    </flow>
+
+    <!-- Handle any unexpected errors. Errors could also be routed elsewhere,
+        e.g. into an error file, send via email to a list, stored in a database, etc. -->
+    <flow name="SystemErrorHandler">
+        <vm:inbound-endpoint path="systemErrorHandler" exchange-pattern="request-response"/>
+        <outbound-endpoint address="stdio://ERR" exchange-pattern="one-way"/>
+    </flow>
+</mule>
